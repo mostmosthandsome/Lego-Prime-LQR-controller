@@ -1,4 +1,4 @@
-# Lege Prime controller
+# Lego Prime controller
 
 ## environment configuration
 We use bleak to connect to hub by bluetooth, so first execute
