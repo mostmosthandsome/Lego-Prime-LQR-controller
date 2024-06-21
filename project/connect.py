@@ -98,17 +98,16 @@ async def main():
         # Tell user to start program on the hub.
         print("Start the program on the hub now with the button.")
         #ensure read the first data
-        await send(b"redy")
+        await send(bytearray(b'\x00'))
         await ready_event.wait()
         global init_pos,degree
         init_pos = degree
         # Send a few messages to the hub.
         while True :
-
-            await send(0)
+            await send(bytearray(b'\x00'))
             await ready_event.wait()
             acc = await lqr._real_lqr_controller(Q, R, np.array([0, 0]),degree-init_pos, angular_velocity)
-            await send(struct.pack('f',-acc))
+            await send(bytearray(b'\x02') + struct.pack('f',-acc))
             end_time = time.time_ns()
             ready_event.clear()
             print("send",acc)
@@ -116,7 +115,7 @@ async def main():
             start_time = time.time_ns()
 
         # Send a message to indicate stop.
-        await send(b"bye~")
+        await send(bytearray(b'\x01'))
 
         print("done.")
 
