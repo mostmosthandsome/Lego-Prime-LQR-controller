@@ -1,8 +1,9 @@
 from pybricks.pupdevices import Motor
 from pybricks.hubs import PrimeHub
-from pybricks.parameters import Port, Axis
+from pybricks.parameters import Port, Axis, Stop
 from pybricks.tools import wait
 import ustruct
+from pybricks.tools import multitask
 
 # Standard MicroPython modules
 from usys import stdin, stdout
@@ -16,47 +17,44 @@ hub = PrimeHub()
 # you to wait for incoming data without blocking.
 keyboard = poll()
 keyboard.register(stdin)
+
 speed = 0
-freq = 10
-dt = 1 / freq
+# disable the ctrl + c input
 micropython.kbd_intr(-1)
+
 Kp = 500
-Ki = 0.01
 Kd = 0.11
 init_pos = hub.imu.rotation(Axis.X)
-sum = 0
+cnt = 0
+data_buffer = bytearray(0)
 
 while True:
-    # Optional: Check available input.
     theta = hub.imu.rotation(Axis.X)
     omega = hub.imu.angular_velocity(Axis.X)
-    a = hub.imu.acceleration(Axis.X)
+
+    # minus zero position to eliminate error
     theta_error = theta - init_pos
-    # sum += theta_error
+
+    # compute speed using pd control
     speed = -Kp * theta_error + Kd * omega
     if speed > 1000:
         speed = 1000
     elif speed < -1000:
         speed = -1000
+    if abs(theta_error) > 45:
+        break
+    data_buffer = data_buffer + ustruct.pack('!f', theta_error) + ustruct.pack('!f', omega) + ustruct.pack('<h',
+                                                                                                           motor.speed()) + ustruct.pack(
+        "!f", speed)
+    if cnt == 801:
+        stdout.buffer.write(data_buffer)
+        data_buffer = bytearray(0)
+
+    # the first 4 byte is used to write cnt
 
     if keyboard.poll(0):
-        cmd = stdin.buffer.read(1)
-        if cmd == b'\x00':
-            stdout.buffer.write(ustruct.pack('f',theta))
-            stdout.buffer.write(ustruct.pack('f',omega))
-            stdout.flush()
-        elif cmd == b'\x01':
+        if cmd == b'\x01':
             break
-        elif cmd == b'\x02':
-        # Decide what to do based on the command.
-        #read the command len
-            acc = ustruct.unpack('f',stdin.buffer.read(4))[0]
-            speed = motor.speed() + acc * 180 / 0.025 * dt
 
+    cnt = cnt + 1
     motor.run(speed)
-    
-
-
-
-
-

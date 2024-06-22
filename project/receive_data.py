@@ -25,14 +25,17 @@ async def main():
         print("Hub was disconnected.")
 
         global data_buffer
-        record_num = (int)(len(data_buffer) / 10)
-        degree_list = [struct.unpack("!f",data_buffer[i * 10:i * 10 + 4])[0] for i in range(record_num)]
-        angular_list = [struct.unpack("!f",data_buffer[i * 10 + 4:i * 10 + 8])[0] for i in range(record_num)]
-        speed_list = [struct.unpack("<h",data_buffer[i * 10 + 8:i * 10 + 10])[0] for i in range(record_num)]
+        unit_len = 14
+        record_num = (int)(len(data_buffer) / unit_len)
+        degree_list = [struct.unpack("!f",data_buffer[i * unit_len:i * unit_len + 4])[0] for i in range(record_num)]
+        angular_list = [struct.unpack("!f",data_buffer[i * unit_len + 4:i * unit_len + 8])[0] for i in range(record_num)]
+        speed_list = [struct.unpack("<h",data_buffer[i * unit_len + 8:i * unit_len+ 10])[0] for i in range(record_num)]
+        control_list = [struct.unpack("!f",data_buffer[i * unit_len+ 10:i *unit_len+ 14])[0] for i in range(record_num)]
         np.save("degree.npy", np.array(degree_list))
         np.save("angular.npy",np.array(angular_list))
         np.save("speed.npy",np.array(speed_list))
-
+        np.save("control.npy",np.array(control_list))
+        print(f"data {record_num} saved")
 
         # If the hub disconnects before this program is done,
         # cancel this program so it doesn't get stuck waiting
